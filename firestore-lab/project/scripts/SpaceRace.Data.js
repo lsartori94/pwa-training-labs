@@ -19,22 +19,48 @@ SpaceRace.prototype.addShip = function(data) {
   /*
     TODO: Implement adding a document
   */
+  const collection = firebase.firestore().collection('ships');
+  return collection.add(data);
 };
 
 SpaceRace.prototype.getAllShips = function(render) {
   /*
     TODO: Retrieve a list of ships
   */
+  const query = firebase.firestore()
+    .collection('ships')
+    .limit(50);
+  this.getDocumentsInQuery(query, render);
 };
 
 SpaceRace.prototype.getDocumentsInQuery = function(query, render) {
   /*
     TODO: Render all documents in the provided query
   */
+ query.onSnapshot(snapshot => {
+   if (!snapshot.size) return render();
+   snapshot.docChanges.forEach(change => {
+     if (change.type === 'added') {
+       render(change.doc);
+     }
+     else if (change.type === 'modified') {
+      document.getElementById(change.doc.id).remove();
+      render(change.doc);
+     }
+     else if (change.type === 'removed') {
+      document.getElementById(change.doc.id).remove();
+     }
+   })
+ });
 };
 
 SpaceRace.prototype.deleteShip = function(id) {
   /*
     TODO: Delete a ship
   */
+  const collection = firebase.firestore().collection('ships');
+  return collection.doc(id).delete()
+    .catch(function(error) {
+      console.error('Error removing document: ', error);
+    });
 };

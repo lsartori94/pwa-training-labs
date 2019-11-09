@@ -19,9 +19,18 @@
  * Initializes the SpaceRace app.
  */
 function SpaceRace() {
+  // firebase.auth().signInAnonymously().then(() => {
+  //   this.initTemplates();
+  //   this.initRouter();
+  // }).catch(err => {
+  //   console.log(err);
+  // });
   firebase.auth().signInAnonymously().then(() => {
-    this.initTemplates();
-    this.initRouter();
+    firebase.firestore().enablePersistence()
+      .then(() => {
+        this.initTemplates();
+        this.initRouter();
+      });
   }).catch(err => {
     console.log(err);
   });

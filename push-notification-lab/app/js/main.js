@@ -23,34 +23,134 @@ const app = (() => {
   const pushButton = document.querySelector('.js-push-btn');
 
   // TODO 2.1 - check for notification support
+  if (!('Notification' in window)) {
+    console.log('This browser does not support notifications!');
+    return;
+  }
 
   // TODO 2.2 - request permission to show notifications
+  Notification.requestPermission(status => {
+    console.log('Notification permisison status:', status);
+  });
 
   function displayNotification() {
-
     // TODO 2.3 - display a Notification
-
+    if (Notification.permission === 'granted') {
+      navigator.serviceWorker.getRegistration().then(reg => {
+        // TODO 2.4 - Add 'options' object to configure the notification
+        const options = {
+          body: 'First notification!',
+          icon: 'images/notification-flat.png',
+          vibrate: [100, 50, 100],
+          data: {
+            dateOfArrival: Date.now(),
+            primaryKey: 1
+          },
+        
+          // TODO 2.5 - add actions to the notification
+          actions: [
+            {action: 'explore', title: 'Go to the site',
+              icon: 'images/checkmark.png'},
+            {action: 'close', title: 'Close the notification',
+              icon: 'images/xmark.png'},
+          ],
+          // TODO 5.1 - add a tag to the notification
+          // tag: 'id1'
+        };
+        reg.showNotification('Hello World!', options);
+      });
+    }
   }
 
   function initializeUI() {
-
     // TODO 3.3b - add a click event listener to the "Enable Push" button
     // and get the subscription object
+    pushButton.addEventListener('click', () => {
+      pushButton.disabled = true;
+      if (isSubscribed) {
+        unsubscribeUser();
+      } else {
+        subscribeUser();
+      }
+    });
+    
+    swRegistration.pushManager.getSubscription()
+    .then(subscription => {
+      isSubscribed = (subscription !== null);
+      updateSubscriptionOnServer(subscription);
+      if (isSubscribed) {
+        console.log('User IS subscribed.');
+      } else {
+        console.log('User is NOT subscribed.');
+      }
+      updateBtn();
+    });
 
   }
 
   // TODO 4.2a - add VAPID public key
+  const applicationServerPublicKey = 'BHudnudNKsXQSX0aqTmbguI9oRIqUP1DPSNC2sLUO0P2JWHvBKdVZyNASYcYyJ9hOaFjRzJiE8Y3SNQQQvrQYFc';
+
+  // function subscribeUser() {
+  //   // TODO 3.4 - subscribe to the push service
+  //   swRegistration.pushManager.subscribe({
+  //     userVisibleOnly: true
+  //   })
+  //   .then(subscription => {
+  //     console.log('User is subscribed:', subscription);
+  //     updateSubscriptionOnServer(subscription);
+  //     isSubscribed = true;
+  //     updateBtn();
+  //   })
+  //   .catch(err => {
+  //     if (Notification.permission === 'denied') {
+  //       console.warn('Permission for notifications was denied');
+  //     } else {
+  //       console.error('Failed to subscribe the user: ', err);
+  //     }
+  //     updateBtn();
+  //   });
+  // }
 
   function subscribeUser() {
-
-    // TODO 3.4 - subscribe to the push service
-
+    const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
+    swRegistration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: applicationServerKey
+    })
+    .then(subscription => {
+      console.log('User is subscribed:', subscription);
+      updateSubscriptionOnServer(subscription);
+      isSubscribed = true;
+      updateBtn();
+    })
+    .catch(err => {
+      if (Notification.permission === 'denied') {
+        console.warn('Permission for notifications was denied');
+      } else {
+        console.error('Failed to subscribe the user: ', err);
+      }
+      updateBtn();
+    });
   }
 
   function unsubscribeUser() {
-
     // TODO 3.5 - unsubscribe from the push service
-
+    swRegistration.pushManager.getSubscription()
+      .then(subscription => {
+        if (subscription) {
+          return subscription.unsubscribe();
+        }
+      })
+      .catch(err => {
+        console.log('Error unsubscribing', err);
+      })
+      .then(() => {
+        updateSubscriptionOnServer(null);
+        console.log('User is unsubscribed');
+        isSubscribed = false;
+        updateBtn();
+      });
   }
 
   function updateSubscriptionOnServer(subscription) {
@@ -116,6 +216,7 @@ const app = (() => {
         swRegistration = swReg;
 
         // TODO 3.3a - call the initializeUI() function
+        initializeUI();
       })
       .catch(err => {
         console.error('Service Worker Error', err);

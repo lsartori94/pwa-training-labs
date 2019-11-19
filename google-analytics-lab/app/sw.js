@@ -15,14 +15,21 @@ limitations under the License.
 */
 
 // TODO Import the helper script
+importScripts('js/analytics-helper.js');
 
 // TODO Add offline analytics script
+importScripts('https://storage.googleapis.com/workbox-cdn/releases/3.4.1/workbox-sw.js');
+
+workbox.googleAnalytics.initialize();
 
 self.addEventListener('notificationclose', function(e) {
   var notification = e.notification;
   var primaryKey = notification.data.primaryKey;
   console.log('Closed notification: ' + primaryKey);
   // TODO Send notification close event
+  e.waitUntil(
+    sendAnalyticsEvent('close', 'notification')
+  );
 });
 
 self.addEventListener('notificationclick', function(e) {
@@ -33,6 +40,7 @@ self.addEventListener('notificationclick', function(e) {
     Promise.all([
       clients.openWindow('pages/page' + primaryKey + '.html'),
       // TODO Send notification click event
+      sendAnalyticsEvent('click', 'notification')
     ])
   );
 });
@@ -50,6 +58,7 @@ self.addEventListener('push', function(e) {
   e.waitUntil(Promise.all([
       self.registration.showNotification('Hello world!', options),
       // TODO Send push recieved event
+      sendAnalyticsEvent('received', 'push')
     ])
   );
 });
